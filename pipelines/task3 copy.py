@@ -7,7 +7,7 @@ docker run --name postgres-container -e POSTGRES_PASSWORD=admin -d -p 5432:5432 
 
 """
 import pandas as pd
-from sqlalchemy import create_engine, MetaData, Table, Column, String, Float, Integer,inspect
+from sqlalchemy import insert, create_engine, MetaData, Table, Column, String, Float, Integer, inspect
 from sqlalchemy.types import ARRAY
 from sqlalchemy.exc import ProgrammingError
 import os
@@ -57,45 +57,50 @@ class OpenFoodFactsDB:
         self.engine = create_engine(
             f"postgresql+psycopg2://postgres:{DB_PWD}@localhost:5432/postgres"
         )
-        self.table_name = "food_data"
+        self.table_name = "food_data_2"
 
     def save_to_db(self):
         """
         Save the DataFrame to a PostgreSQL database.
         """
-        with self.engine.connect() as connection:
-            meta = MetaData()
-            # Define the table schema with only the primary columns
-            columns = [
-                Column("product_id", String, primary_key=True),
-                Column("product_name", String),
-            ]
-            # Dynamically add the remaining columns based on DataFrame
-            for col in self.df.columns:
-                if col not in ["product_id", "product_name"]:
-                    if self.df[col].dtype == "float64":
-                        columns.append(Column(col, Float))
-                    elif self.df[col].dtype == "object":
-                        if self.df[col].apply(lambda x: isinstance(x, list)).all():
-                            columns.append(Column(col, ARRAY(String)))
-                        else:
-                            columns.append(Column(col, String))
+        # Store the DataFrame in the PostgreSQL table
+        table_name = 'food_data_2'
+        username = 'postgres'
+        password = 'admin'
+        host = 'localhost'
+        port = '5432'  # Default PostgreSQL port
+        database = 'postgres'
 
-            # Create table schema dynamically
-            print(columns)
-            # Check if the table exists and drop it if it does
-            inspector = inspect(self.engine)
-            metadata = MetaData()
-            if inspector.has_table(self.table_name):
-                Table(self.table_name, metadata, autoload_with=self.engine).drop(self.engine)
-            food_data_table = Table(self.table_name, meta, *columns, extend_existing=True)
-            metadata.create_all(self.engine)
+        # Create the SQLAlchemy engine
+        engine = create_engine(f'postgresql+psycopg2://{username}:{password}@{host}:{port}/{database}')
+        # Create a sample DataFrame
+        data = {
+            'id': [1, 2, 3],
+            'array_column': [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+        }
+        df = pd.DataFrame(data)
+        # Define the table schema using SQLAlchemy
+        metadata = MetaData()
+        table_name = 'food_data_2'
 
-            # Insert data
-            self.df.to_sql(
-                self.table_name, self.engine, if_exists="replace", index=False,
-                dtype={'categories_hierarchy': ARRAY(String)}
-            )
+
+
+        # Define the table schema with the correct types
+        your_table = Table(
+            table_name,
+            metadata,
+            Column('id', Integer, primary_key=True),
+            Column('array_column', ARRAY(Integer)),
+            extend_existing=True
+        )
+
+        # Create the table in the database
+        metadata.create_all(engine)
+
+        # Use the to_sql method with the proper dtype specification for array_column
+        df.to_sql(table_name, engine, if_exists='replace', index=False, dtype={'array_column': ARRAY(Integer)})
+
+        print(f"DataFrame stored in table {table_name} in PostgreSQL databaseeeee.")
 
     def run(self):
         """
@@ -135,8 +140,8 @@ if __name__ == "__main__":
     metadata.reflect(bind=engine)
 
     # Assuming you have a table named 'your_table'
-    table_name = 'food_data'
-    table = Table(table_name, metadata, autoload_with=engine, extend_existing=True)
+    table_name = 'food_data_2'
+    table = Table(table_name, metadata, autoload_with=engine)
 
     # Print the schema of the table
     print(f"Schema of the table '{table_name}':")
@@ -153,7 +158,7 @@ if __name__ == "__main__":
     # Print the results
     for row in results:
         pass
-        # print(row)
+        print(row)
 
     # Close the session
     session.close()
