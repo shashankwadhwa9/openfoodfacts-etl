@@ -7,9 +7,8 @@ docker run --name postgres-container -e POSTGRES_PASSWORD=admin -d -p 5432:5432 
 
 """
 import pandas as pd
-from sqlalchemy import create_engine, MetaData, Table, Column, String, Float, Integer,inspect
+from sqlalchemy import create_engine, MetaData, Table, Column, String, Float
 from sqlalchemy.types import ARRAY
-from sqlalchemy.exc import ProgrammingError
 import os
 import ast
 
@@ -81,20 +80,18 @@ class OpenFoodFactsDB:
                         else:
                             columns.append(Column(col, String))
 
-            # Create table schema dynamically
-            print(columns)
-            # Check if the table exists and drop it if it does
-            inspector = inspect(self.engine)
-            metadata = MetaData()
-            if inspector.has_table(self.table_name):
-                Table(self.table_name, metadata, autoload_with=self.engine).drop(self.engine)
-            food_data_table = Table(self.table_name, meta, *columns, extend_existing=True)
-            metadata.create_all(self.engine)
+            food_data_table = Table(
+                self.table_name, meta, *columns, extend_existing=True
+            )
+            meta.create_all(self.engine)
 
             # Insert data
             self.df.to_sql(
-                self.table_name, self.engine, if_exists="replace", index=False,
-                dtype={'categories_hierarchy': ARRAY(String)}
+                self.table_name,
+                self.engine,
+                if_exists="replace",
+                index=False,
+                dtype={"categories_hierarchy": ARRAY(String)},
             )
 
     def run(self):
@@ -110,50 +107,3 @@ if __name__ == "__main__":
 
     # Run the process to save data to the database
     db.run()
-
-    from sqlalchemy import create_engine, MetaData, Table
-    from sqlalchemy.orm import sessionmaker
-
-    # Define the PostgreSQL connection parameters
-    username = 'postgres'
-    password = 'admin'
-    host = 'localhost'
-    port = '5432'  # Default PostgreSQL port
-    database = 'postgres'
-
-    # Create the SQLAlchemy engine
-    engine = create_engine(f'postgresql+psycopg2://{username}:{password}@{host}:{port}/{database}')
-
-    # Create a configured "Session" class
-    Session = sessionmaker(bind=engine)
-
-    # Create a Session
-    session = Session()
-
-    # Reflect the existing database into a new model
-    metadata = MetaData()
-    metadata.reflect(bind=engine)
-
-    # Assuming you have a table named 'your_table'
-    table_name = 'food_data'
-    table = Table(table_name, metadata, autoload_with=engine, extend_existing=True)
-
-    # Print the schema of the table
-    print(f"Schema of the table '{table_name}':")
-    for column in table.columns:
-        print(f"{column.name} ({column.type})")
-        print(isinstance(column.type, ARRAY))
-
-    # Execute a query to get all data from the table
-    query = session.query(table)
-
-    # Fetch all results
-    results = query.all()
-
-    # Print the results
-    for row in results:
-        pass
-        # print(row)
-
-    # Close the session
-    session.close()
