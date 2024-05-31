@@ -1,3 +1,8 @@
+"""
+docker-compose up -d db
+
+docker-compose run etl
+"""
 import requests
 import pandas as pd
 from sqlalchemy import create_engine, MetaData, Table, Column, String, Float, text
@@ -73,13 +78,6 @@ class OpenFoodFactsETL:
 
         return df_subset
 
-    def truncate_table(self):
-        """
-        Truncate the table before inserting new data.
-        """
-        with self.engine.connect() as connection:
-            connection.execute(f"TRUNCATE TABLE {self.table_name}")
-
     def save_to_db(self):
         """
         Save the DataFrame to a PostgreSQL database.
@@ -120,7 +118,6 @@ class OpenFoodFactsETL:
         """
         Run the ETL process to save data to the database.
         """
-        self.truncate_table()
         self.save_to_db()
 
     def run_tests(self):
@@ -130,6 +127,7 @@ class OpenFoodFactsETL:
                 text(f"SELECT COUNT(*) FROM {self.table_name};")
             )
             count = result.scalar()
+            print(f"Validating that row count is {len(PRODUCT_IDS)}")
             assert count == len(PRODUCT_IDS)
 
             # Validate the number of columns
@@ -139,6 +137,7 @@ class OpenFoodFactsETL:
                 )
             )
             count = result.scalar()
+            print(f"Validating that column count is {len(INPUT_COLUMNS)}")
             assert count == len(INPUT_COLUMNS)
 
 

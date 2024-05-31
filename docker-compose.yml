@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    container_name: postgres-container
+    environment:
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    networks:
+      - etl_network
+
+  etl:
+    build: .
+    depends_on:
+      - db
+    environment:
+      DB_PWD: admin
+    networks:
+      - etl_network
+
+networks:
+  etl_network:
+    driver: bridge
