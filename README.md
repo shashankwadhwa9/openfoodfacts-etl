@@ -11,7 +11,9 @@ A pipeline to extract the data for some products from the openfoodfacts API and 
 2. **Multilingual Data**: Data is in multiple languages, which complicates standardization and analysis.
 3. **Data Duplication**: Duplicate entries might occur if the same ingredient is listed multiple times with slight variations.
 
-#### d) The best place would be to use "Secrets management services" provided by cloud providers to securely store and manage access to credentials.
+#### d)
+
+The best place would be to use "Secrets management services" provided by cloud providers to securely store and manage access to credentials.
 
 In AWS it's called AWS Secrets Manager whereas in GCP it is known by Google Secret Manager.
 
